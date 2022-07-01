@@ -228,6 +228,8 @@ const init = async () => {
     }
     const signatureA3 = await channelA.signState(channelState3);
 
+
+
     //----------------------------------------------------------------------
     // So they can do this endlessly.
     // Note that a party can make its transfers (from itself to another) asynchronously without waiting for the action of the other side.
