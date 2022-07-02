@@ -17,6 +17,7 @@
   },
   "homepage": "https://github.com/rutkovskii/OpenStream#readme",
   "dependencies": {
+    "axios": "^0.27.2",
     "tonweb": "^0.0.50"
   }
 }
