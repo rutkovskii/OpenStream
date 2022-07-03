@@ -5,7 +5,7 @@ The Open Network 1st Hackathon 01/07/22 - 03/07/22 Repository
  __OpenStream__ is the first streaming payroll tool kit for DAOs,
  ...but it can be used by anyone to make continuous periodic payments.
 
-### You can find our demo and presentation in our [Notion](theopenstream.com').
+### You can find our demo and presentation in our [Notion](http://theopenstream.com).
 
 ### How to use:
 * To Run the Backend Prototype, type ```node main.js```
