@@ -13,8 +13,8 @@ const privB = 'WFIYBf/byhLQuybaeEwhyFM7YFbcWxOoCfviff+B1K8==';
 // To speed up completion of transfer, change `interval` to smaller number                                          //
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-const monthlyStreamingAmount = '3';
-const interval = 60;
+const monthlyStreamingAmount = '25';
+const interval = 60000; // in milliseconds
 /////////////////////////////////////
 
 const init = async () => {
@@ -135,6 +135,7 @@ const init = async () => {
 
     console.log()
     await getStateDeploy()
+    console.log()
 
 
 
@@ -337,7 +338,7 @@ const init = async () => {
     await new Promise(r => setTimeout(r, 3000));
     console.log('Final walletA balance: ', fromNano(walletBalanceA));
     console.log('Final walletB balance: ', fromNano(walletBalanceB));
-    console.log('The Open Stream')
+    console.log('~The Open Stream~')
 }
 
 
