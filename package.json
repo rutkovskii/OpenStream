@@ -1,10 +1,13 @@
 {
-  "name": "openstream",
-  "version": "1.0.0",
+  "name": "reactjs",
+  "version": "0.1.0",
   "description": "The Open Network Hackathon 01/07/22 - 03/07/22 Repository",
   "main": "main.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "react-app-rewired start",
+    "build": "react-app-rewired build",
+    "test": "react-app-rewired test",
+    "eject": "react-app-rewired eject"
   },
   "repository": {
     "type": "git",
@@ -17,7 +20,26 @@
   },
   "homepage": "https://github.com/rutkovskii/OpenStream#readme",
   "dependencies": {
-    "axios": "^0.27.2",
-    "tonweb": "^0.0.50"
+    "buffer": "^6.0.3",
+    "ethers": "^5.6.8",
+    "package.json": "^2.0.1",
+    "process": "^0.11.10",
+    "react": "^18.2.0",
+    "react-dom": "^18.1.0",
+    "react-scripts": "^5.0.1",
+    "react-toastify": "9.0.3",
+    "stream-browserify": "^3.0.0",
+    "tailwindcss": "^3.0.24",
+    "tonweb": "^0.0.50",
+    "wouter": "^2.8.0-alpha.2"
+  },
+  "private": true,
+  "browserslist": [
+    ">0.2%",
+    "not dead",
+    "not op_mini all"
+  ],
+  "devDependencies": {
+    "react-app-rewired": "^2.2.1"
   }
 }
