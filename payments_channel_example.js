@@ -243,10 +243,30 @@ const init = async () => {
     console.log('seqnoA', segA);
     console.log('seqnoB', segB);
 
-    let amount = '3';
+
+    // changeSum(5000);
+
+    let amount = changeSum(5000);
     const int_finalBalanceA = new BN(BalA).sub(toNano(amount));
     const int_finalBalanceB = new BN(BalB).add(toNano(amount));
 
+    function changeSum(currentSum) {
+        let time = '60000';
+        let payment = (currentSum/time);
+        let timerId = setInterval(function() {
+            if (currentSum > 0) {
+
+                currentSum = currentSum - payment;
+
+            }
+            else if (currentSum == 0) {
+                clearInterval(timerId);
+
+            }
+            console.log(currentSum);
+        }, 60000);
+
+    }
 
     const channelState1 = {
         balanceA: toNano(int_finalBalanceA.toString()),
