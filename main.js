@@ -4,6 +4,19 @@ const BN = TonWeb.utils.BN;
 const toNano = TonWeb.utils.toNano;
 const fromNano = TonWeb.utils.fromNano;
 
+const privA = 'mQbes5CpgWSb2++4WG/sbhPWlFBJQH8gtxtmTxh5/Uo=';
+const privB = 'WFIYBf/byhLQuybaeEwhyFM7YFbcWxOoCfviff+B1K8==';
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// Enter How Much to Transfer monthly Below   (no more than 25 pls, our account does not have that many test coins) //
+//                                                                                                                  //
+// To speed up completion of transfer, change `interval` to smaller number                                          //
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+const monthlyStreamingAmount = '3';
+const interval = 60;
+/////////////////////////////////////
+
 const init = async () => {
     const providerUrl = 'https://testnet.toncenter.com/api/v2/jsonRPC'; // TON HTTP API url. Use this url for testnet
     const apiKey = '6283e3289b031abaccff45dad6da451fd41adeb3367f44af184bf778bf3085b8'; // Obtain your API key in https://t.me/tontestnetapibot
@@ -11,10 +24,10 @@ const init = async () => {
 
 
     //---------------------------- Initialize seeds ----------------------------
-    const seedA = TonWeb.utils.base64ToBytes('WFIYBf/byhLQuybaeEwhyFM7YFbcWxOoCfviff+B1K8='); // A's private (secret) key
+    const seedA = TonWeb.utils.base64ToBytes(privA); // A's private (secret) key
     const keyPairA = tonweb.utils.keyPairFromSeed(seedA); // Obtain key pair (public key and private key)
 
-    const seedB = TonWeb.utils.base64ToBytes('mQbes5CpgWSb2++4WG/sbhPWlFBJQH8gtxtmTxh5/Uo='); // B's private (secret) key
+    const seedB = TonWeb.utils.base64ToBytes(privB); // B's private (secret) key
     const keyPairB = tonweb.utils.keyPairFromSeed(seedB); // Obtain key pair (public key and private key)
 
     console.log()
@@ -44,14 +57,14 @@ const init = async () => {
 
     //---------------------------- Payment Channel Set Up ----------------------------
     const channelInitState = {
-        balanceA: toNano('3'), // A's initial balance in Toncoins. Next A will need to make a top-up for this amount
+        balanceA: toNano(monthlyStreamingAmount), // A's initial balance in Toncoins. Next A will need to make a top-up for this amount
         balanceB: toNano('1'), // B's initial balance in Toncoins. Next B will need to make a top-up for this amount
         seqnoA: new BN(0), // initially 0
         seqnoB: new BN(0)  // initially 0
     };
 
     const channelConfig = {
-        channelId: new BN(150), // new BN(~~(Date.now() / 1000)), // Channel ID, for each new channel there must be a new ID
+        channelId: new BN(~~(Date.now() / 1000)), // Channel ID, for each new channel there must be a new ID
         addressA: walletAddressA, // A's funds will be withdrawn to this wallet address after the channel is closed
         addressB: walletAddressB, // B's funds will be withdrawn to this wallet address after the channel is closed
         initBalanceA: channelInitState.balanceA,
@@ -104,61 +117,59 @@ const init = async () => {
     //---------------------------- Wait for Channel Creation ----------------------------
 
     async function getStateDeploy() {
-        console.log("Getting state after deploy...")
+        console.log("Getting State after deploy...")
 
-        didntGotState = true
+        let didntGotState = true
 
         while (didntGotState) {
             try {
                 const stateDeploy = await channelA.getChannelState();
-                console.log("Got state!", stateDeploy)
+                console.log("Got state:", stateDeploy)
                 didntGotState = false
-                return stateDeploy
+                //return stateDeploy
             } catch {
                 await new Promise((resolve) => setTimeout(() => resolve(), 5000))
             }
         }
     }
 
-    let state = await getStateDeploy()
-    console.log(state)
-
-    let data = await channelA.getData();
-    console.log('balanceA = ', data.balanceA.toString())
-    console.log('balanceB = ', data.balanceB.toString())
-    console.log('seqnoA', data.seqnoA.toString())
-    console.log('seqnoB', data.seqnoA.toString())
+    console.log()
+    await getStateDeploy()
 
 
-    //---------------------------- Top Up and Waiting for Funds to Arrive ----------------------------
-    // await fromWalletA
-    //     .topUp({coinsA: channelInitState.balanceA, coinsB: new BN(0)})
-    //     .send(channelInitState.balanceA.add(toNano('0.1'))); // +0.05 TON to network fees
-    //
-    // await fromWalletB
-    //     .topUp({coinsA: new BN(0), coinsB: channelInitState.balanceB})
-    //     .send(channelInitState.balanceB.add(toNano('0.1'))); // +0.05 TON to network fees
+
+
+
+    // ---------------------------- Top Up and Waiting for Funds to Arrive ----------------------------
+    await fromWalletA
+        .topUp({coinsA: channelInitState.balanceA, coinsB: new BN(0)})
+        .send(channelInitState.balanceA.add(toNano('0.1'))); // +0.05 TON to network fees
+
+    await fromWalletB
+        .topUp({coinsA: new BN(0), coinsB: channelInitState.balanceB})
+        .send(channelInitState.balanceB.add(toNano('0.1'))); // +0.05 TON to network fees
+
 
 
     async function getBalanceDeploy() {
         console.log("Getting Balance after deploy...")
 
-        didntGotState = true
+        let didntGotState = true
 
         while (didntGotState) {
             try {
                 let data = await channelA.getData();
                 if (data.balanceA.toString() === channelInitState.balanceA.toString() &&
                     data.balanceB.toString() === channelInitState.balanceB.toString()) {
-                    console.log("Coins Received!", data.balanceA.toString(), data.balanceB.toString())
+                    console.log("Coins Received:", data.balanceA.toString(), data.balanceB.toString())
                     didntGotState = false
                 }
-                // should comment it out when example would start working
-                else {
-                    console.log(data.balanceA.toString())
-                    console.log(data.balanceB.toString())
-                    console.log()
-                }
+                //should comment it out when example would start working
+                // else {
+                //     console.log(data.balanceA.toString())
+                //     console.log(data.balanceB.toString())
+                //     console.log()
+                // }
                 await new Promise((resolve) => setTimeout(() => resolve(), 5000))
             } catch {
                 await new Promise((resolve) => setTimeout(() => resolve(), 5000))
@@ -166,6 +177,14 @@ const init = async () => {
         }
     }
     await getBalanceDeploy()
+
+    // Get Balance
+    walletBalanceA = await tonweb.getBalance(walletAddressA.toString(true, true, true))
+    walletBalanceB = await tonweb.getBalance(walletAddressB.toString(true, true, true))
+    console.log()
+    console.log('Intermediate walletA balance: ',fromNano(walletBalanceA));
+    console.log('Intermediate walletB balance: ',fromNano(walletBalanceB));
+    console.log()
 
 
     //---------------------------- Init Channel and Wait for Init to finish ----------------------------
@@ -177,16 +196,16 @@ const init = async () => {
     async function getStateInit() {
         console.log("Getting state after Init...")
 
-        didntGotState = true
+        let didntGotState = true
 
         while (didntGotState) {
             try {
                 const stateInit = await channelA.getChannelState();
-                console.log("Got state:", stateInit)
+                // console.log("Got state:", stateInit)
                 if (stateInit === TonWeb.payments.PaymentChannel.STATE_OPEN) {
                     console.log("Got state:", stateInit)
                     didntGotState = false
-                    return stateInit
+                    // return stateInit
                 }
                 await new Promise((resolve) => setTimeout(() => resolve(), 5000))
             } catch {
@@ -194,39 +213,23 @@ const init = async () => {
             }
         }
     }
-    state = await getStateInit();
-    console.log(state);
-
-
-    //---------------------------- See Balance and Seqno's Prior to 1st Transaction ----------------------------
-
-    console.log('See Balance and Seqno\'s Prior to 1st Transaction')
-    data = await channelA.getData();
-    BalA = data.balanceA.toString();
-    BalB = data.balanceB.toString();
-    segA = data.seqnoA.toString();
-    segB = data.seqnoB.toString();
-
-    console.log('balanceA = ', BalA);
-    console.log('balanceB = ', BalB);
-    console.log('seqnoA', segA);
-    console.log('seqnoB', segB);
-    console.log()
+    await getStateInit();
 
 
     //---------------------------- Make Streaming Payments ----------------------------
-    function createChannelState(updatedBalanceA,updatedBalanceB,seqnoA_incr,seqnoB_incr) {
+    function createChannelState(updatedBalanceA,updatedBalanceB,seqnoA,seqnoB,seqnoA_incr,seqnoB_incr) {
         let channelState = {
             balanceA: toNano(updatedBalanceA.toString()),
             balanceB: toNano(updatedBalanceB.toString()),
-            seqnoA: new BN(segA).add(new BN(seqnoA_incr)), //2
-            seqnoB: new BN(segB).add(new BN(seqnoB_incr))  //0
+            seqnoA: new BN(seqnoA).add(new BN(seqnoA_incr)), //2
+            seqnoB: new BN(seqnoB).add(new BN(seqnoB_incr))  //0
         };
         return channelState
     }
 
-    async function makeStreamPayments(updatedBalanceA,updatedBalanceB,seqnoA_incr,seqnoB_incr) {
-        let channelState = createChannelState(updatedBalanceA, updatedBalanceB, seqnoA_incr, seqnoB_incr)
+
+    async function makeStreamPayments(updatedBalanceA,updatedBalanceB,seqnoA,seqnoB,seqnoA_incr,seqnoB_incr) {
+        let channelState = createChannelState(updatedBalanceA,updatedBalanceB,seqnoA,seqnoB,seqnoA_incr,seqnoB_incr)
 
         let signatureA1 = await channelA.signState(channelState);
         if (!(await channelB.verifyState(channelState, signatureA1))) {
@@ -238,85 +241,48 @@ const init = async () => {
         return channelState
     }
 
-    // get Ton/min
-    function changeSum(currentSum) {
-        let stepBalanceA;
-        let stepBalanceB;
-        let channelState;
-        let interval = '60000'; // minute
-        let payment = currentSum/interval; //NanoTon/Min
-        let timerId = setInterval(
-            function() {
-            if (currentSum > 0) {
-                currentSum = currentSum - payment;
+
+    async function changeSum(currentSum) {
+        console.log("Paying...")
+        let stepBalanceA; let stepBalanceB; let payingChannelState; let newCurrentSum; let data;
+        let payment = new BN(currentSum / interval.toString()); //NanoTon/Min
+        let stillPaying = true
+
+        while (stillPaying) {
+            newCurrentSum = currentSum - payment;
+
+            if (newCurrentSum > 0) {
+                currentSum = newCurrentSum;
+
+                data = await channelA.getData();
+                stepBalanceA = new BN(data.balanceA.toString()).sub(payment);
+                stepBalanceB = new BN(data.balanceB.toString()).add(payment);
+
+                payingChannelState = makeStreamPayments(stepBalanceA, stepBalanceB, parseInt(data.seqnoA),parseInt(data.seqnoB), 2, 0);
+
+            } else if (newCurrentSum === 0) {
+                // Create final state -- increment both segno's
+                payingChannelState = makeStreamPayments(stepBalanceA,stepBalanceB,parseInt(data.seqnoA),parseInt(data.seqnoB),2,2);
+                stillPaying = false
+                console.log('Amount left to pay:', fromNano(newCurrentSum.toString()));
+                return payingChannelState
+
+            } else {
+                // less than 0
+                // for now just assume `newCurrentSum` never becomes less than zero
+                payingChannelState = makeStreamPayments(stepBalanceA,stepBalanceB,parseInt(data.seqnoA),parseInt(data.seqnoB),2,2);
+                stillPaying = false
+                console.log('Amount left to pay:', fromNano(newCurrentSum.toString()));
+                return payingChannelState
             }
-            else if (currentSum == 0) {
-                clearInterval(timerId);
-                // Create final state
-                channelState = makeStreamPayments(stepBalanceA,stepBalanceB,2,2);
-                return channelState
-            }
+            console.log('Amount left to pay:', fromNano(currentSum.toString()));
 
-            console.log(typeof payment)
-            stepBalanceA = new BN(BalA).sub(payment); // Check whether TotoNano(toNano(Ton/Min)) changes anything
-            stepBalanceB = new BN(BalB).add(payment);
-            channelState = makeStreamPayments(stepBalanceA,stepBalanceB,2,0);
-
-            console.log('Amount left to pay:', currentSum);
-        }, 5000); //60000 ms = 1 min; 5000 = 5 sec;
-
-        // return channelState   ---- Must implement
+            await new Promise((resolve) => setTimeout(() => resolve(), interval)); // for minute its 60000
+        }
     }
 
-    let monthlyStreamingAmount = '2';
     let monthlyStreamingAmountNano = toNano(monthlyStreamingAmount)
     let channelState = await changeSum(monthlyStreamingAmountNano);
-
-
-    // let amount = 15;
-    // let int_finalBalanceA = new BN(BalA).sub(toNano(amount));
-    // let int_finalBalanceB = new BN(BalB).add(toNano(amount));
-    //
-    //
-    // // let amount = '15';
-    // // let int_finalBalanceA = new BN(BalA).sub(toNano(amount));
-    // // let int_finalBalanceB = new BN(BalB).add(toNano(amount));
-    //
-    // const channelState1 = {
-    //     balanceA: toNano(int_finalBalanceA.toString()),
-    //     balanceB: toNano(int_finalBalanceB.toString()),
-    //     seqnoA: new BN(segA).add(new BN(2)),
-    //     seqnoB: new BN(segB).add(new BN(0))
-    // };
-    //
-    //
-    // //---------------------------- Signing the Transaction ----------------------------
-    // const signatureA1 = await channelA.signState(channelState1);
-    // if (!(await channelB.verifyState(channelState1, signatureA1))) {
-    //     throw new Error('Invalid A signature');
-    // }
-    // let signatureB1 = await channelB.signState(channelState1);
-    //
-    //
-    // //---------------------------- Prior to Closure Transaction ----------------------------
-    //
-    // data = await channelA.getData();
-    // segA = data.seqnoA.toString();
-    // segB = data.seqnoB.toString();
-    //
-    // // For final transaction balance does not change
-    // const channelState2 = {
-    //     balanceA: toNano(int_finalBalanceA.toString()),
-    //     balanceB: toNano(int_finalBalanceB.toString()),
-    //     seqnoA: new BN(segA).add(new BN(2)),
-    //     seqnoB: new BN(segB).add(new BN(2))
-    // };
-    //
-    // const signatureA2 = await channelA.signState(channelState2);
-    // if (!(await channelB.verifyState(channelState2, signatureA2))) {
-    //     throw new Error('Invalid A signature');
-    // }
-    // const signatureB2 = await channelB.signState(channelState2);
 
     //---------------------------- Closure of Channel ----------------------------
 
@@ -337,28 +303,25 @@ const init = async () => {
     }).send(toNano('0.06'));
 
 
-
     // wait for state from Channel
     async function getStateFinal() {
-        console.log("Getting state after Close...")
+        console.log("Getting State after Close...")
 
-        didntGotState = true
+        let didntGotState = true
 
         while (didntGotState) {
             try {
                 const stateInit = await channelA.getChannelState();
-                console.log("Got state:", stateInit)
-                let data = await channelA.getData();
-                console.log('balanceA = ', data.balanceA.toString())
-                console.log('balanceB = ', data.balanceB.toString())
-                segA = data.seqnoA.toString();
-                segB = data.seqnoB.toString();
-                console.log('seqnoA', segA);
-                console.log('seqnoB', segB);
+                // console.log("Got state:", stateInit)
                 if (stateInit === 0) {
-                    console.log("Got state!", stateInit)
+                    let data = await channelA.getData();
+                    console.log('Final balanceA = ', data.balanceA.toString())
+                    console.log('Final balanceB = ', data.balanceB.toString())
+                    console.log('Final seqnoA', data.seqnoA.toString());
+                    console.log('Final seqnoB', data.seqnoB.toString());
+                    console.log("Got state:", stateInit)
                     didntGotState = false
-                    return stateInit
+                    //return stateInit
                 }
                 await new Promise((resolve) => setTimeout(() => resolve(), 5000))
             } catch {
@@ -366,32 +329,16 @@ const init = async () => {
             }
         }
     }
-    state = await getStateFinal()
-    console.log(state)
+    await getStateFinal()
 
-
-    data = await channelA.getData();;
-    console.log('seqnoA', data.seqnoA.toString());
-    console.log('seqnoB', data.seqnoB.toString());
-
-    console.log('Final Balances:')
+    console.log('\nFinal Balances:')
     walletBalanceA = await tonweb.getBalance(walletAddressA.toString(true, true, true))
     walletBalanceB = await tonweb.getBalance(walletAddressB.toString(true, true, true))
-
-    await new Promise(r => setTimeout(r, 5000));
-
-    console.log()
-    console.log('Final walletA balance: ',fromNano(walletBalanceA));
-    console.log('Final walletB balance: ',fromNano(walletBalanceB));
-    console.log('End')
+    await new Promise(r => setTimeout(r, 3000));
+    console.log('Final walletA balance: ', fromNano(walletBalanceA));
+    console.log('Final walletB balance: ', fromNano(walletBalanceB));
+    console.log('The Open Stream')
 }
 
-// let currentSum ='2000';
-// let interval = '60000'; // minute
-//
-// let payment = toNano(currentSum)/interval;
-//
-// // let payment = (toNano((currentSum/interval).toString()));
-// console.log(payment)
 
 init();
