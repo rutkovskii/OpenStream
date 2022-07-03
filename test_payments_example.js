@@ -55,8 +55,8 @@ const init = async () => {
     const walletAddressB = await walletB.getAddress(); // address of this wallet in blockchain
     console.log('walletAddressB = ', walletAddressB.toString(true, true, true));
 
-    const walletBalanceA = await tonweb.getBalance(walletAddressA.toString(true, true, true))
-    const walletBalanceB = await tonweb.getBalance(walletAddressB.toString(true, true, true))
+    let walletBalanceA = await tonweb.getBalance(walletAddressA.toString(true, true, true))
+    let walletBalanceB = await tonweb.getBalance(walletAddressB.toString(true, true, true))
 
 
     console.log()
@@ -73,14 +73,14 @@ const init = async () => {
     // They share this information off-chain, for example via a websocket.
 
     const channelInitState = {
-        balanceA: toNano('9'), // A's initial balance in Toncoins. Next A will need to make a top-up for this amount
-        balanceB: toNano('16'), // B's initial balance in Toncoins. Next B will need to make a top-up for this amount
+        balanceA: toNano('20'), // A's initial balance in Toncoins. Next A will need to make a top-up for this amount
+        balanceB: toNano('10'), // B's initial balance in Toncoins. Next B will need to make a top-up for this amount
         seqnoA: new BN(0), // initially 0
         seqnoB: new BN(0)  // initially 0
     };
 
     const channelConfig = {
-        channelId: new BN(130),//new BN(~~(Date.now() / 1000)), // Channel ID, for each new channel there must be a new ID
+        channelId: new BN(141),//new BN(~~(Date.now() / 1000)), // Channel ID, for each new channel there must be a new ID
         addressA: walletAddressA, // A's funds will be withdrawn to this wallet address after the channel is closed
         addressB: walletAddressB, // B's funds will be withdrawn to this wallet address after the channel is closed
         initBalanceA: channelInitState.balanceA,
@@ -130,7 +130,7 @@ const init = async () => {
     // 0.05 TON is the amount to execute this transaction on the blockchain. The unused portion will be returned.
     // After this action, a smart contract of our payment channel will be created in the blockchain.
 
-    await fromWalletA.deploy().send(toNano('0.05'));
+    await fromWalletA.deploy().send(toNano('0.1'));
 
     // To check you can use blockchain explorer https://testnet.tonscan.org/address/<CHANNEL_ADDRESS>
     // We can also call get methods on the channel (it's free) to get its current data.
@@ -165,35 +165,60 @@ const init = async () => {
     console.log('seqnoA', data.seqnoA.toString())
     console.log('seqnoB', data.seqnoA.toString())
 
-
     // TOP UP
     // Now each parties must send their initial balance from the wallet to the channel contract.
 
+    await fromWalletA
+        .topUp({coinsA: channelInitState.balanceA, coinsB: new BN(0)})
+        .send(channelInitState.balanceA.add(toNano('0.1'))); // +0.05 TON to network fees
+
+    await fromWalletB
+        .topUp({coinsA: new BN(0), coinsB: channelInitState.balanceB})
+        .send(channelInitState.balanceB.add(toNano('0.1'))); // +0.05 TON to network fees
+
+
     // await fromWalletA
-    //     .topUp({coinsA: channelInitState.balanceA, coinsB: new BN(0)})
-    //     .send(channelInitState.balanceA.add(toNano('0.1'))); // +0.05 TON to network fees
+    //     .topUp({coinsA: new BN(2), coinsB: new BN(0)})
+    //     .send(channelInitState.balanceA.add(toNano('0.06'))); // +0.05 TON to network fees
     //
     // await fromWalletB
-    //     .topUp({coinsA: new BN(0), coinsB: channelInitState.balanceB})
-    //     .send(channelInitState.balanceB.add(toNano('0.05'))); // +0.05 TON to network fees
+    //     .topUp({coinsA: new BN(0), coinsB: new BN(2)})
+    //     .send(channelInitState.balanceB.add(toNano('0.06'))); // +0.05 TON to network fees
 
     // to check, call the get method - the balances should change
 
     // INIT
     // After everyone has done top-up, we can initialize the channel from any wallet
 
-    await fromWalletA.init(channelInitState).send(toNano('0.06'));
+    async function getBalanceDeploy() {
+        console.log("Getting Balance after deploy...")
 
-    // await (async function repeat() {
-    //     try {
-    //         const state = await channelA.getChannelState();
-    //         console.log(state)
-    //     } catch (error) {
-    //         setTimeout(() => {
-    //             repeat()
-    //         }, 1000)
-    //     }
-    // })()
+        didntGotState = true
+
+        while (didntGotState) {
+            try {
+                let data = await channelA.getData();
+                if (data.balanceA.toString() === channelInitState.balanceA.toString() &&
+                    data.balanceB.toString() === channelInitState.balanceB.toString()) {
+                    console.log("Coins Received!", data.balanceA.toString(), data.balanceB.toString())
+                    didntGotState = false
+                }
+                // should comment it out when example would start working
+                else {
+                    console.log(data.balanceA.toString())
+                    console.log(data.balanceB.toString())
+                    console.log()
+                }
+                await new Promise((resolve) => setTimeout(() => resolve(), 5000))
+            } catch {
+                await new Promise((resolve) => setTimeout(() => resolve(), 5000))
+            }
+        }
+    }
+    await getBalanceDeploy()
+
+    await fromWalletA.init(channelInitState).send(toNano('0.1'));
+
 
     // wait for state from Channel
     async function getStateInit() {
@@ -205,11 +230,8 @@ const init = async () => {
             try {
                 const stateInit = await channelA.getChannelState();
                 console.log("Got state:", stateInit)
-                let data = await channelA.getData();
-                console.log('balanceA = ', data.balanceA.toString())
-                console.log('balanceB = ', data.balanceB.toString())
                 if (stateInit === TonWeb.payments.PaymentChannel.STATE_OPEN) {
-                    console.log("Got state!", stateInit)
+                    console.log("Got state:", stateInit)
                     didntGotState = false
                     return stateInit
                 }
@@ -219,11 +241,8 @@ const init = async () => {
             }
         }
     }
-
     state = await getStateInit();
     console.log(state);
-
-
 
 
     // to check, call the get method - `state` should change to `TonWeb.payments.PaymentChannel.STATE_OPEN`
@@ -243,36 +262,18 @@ const init = async () => {
     console.log('seqnoA', segA);
     console.log('seqnoB', segB);
 
+    // Make transaction
+    let amount = '15';
+    let int_finalBalanceA = new BN(BalA).sub(toNano(amount));
+    let int_finalBalanceB = new BN(BalB).add(toNano(amount));
 
-    // changeSum(5000);
 
-    let amount = changeSum(5000);
-    const int_finalBalanceA = new BN(BalA).sub(toNano(amount));
-    const int_finalBalanceB = new BN(BalB).add(toNano(amount));
-
-    function changeSum(currentSum) {
-        let time = '60000';
-        let payment = (currentSum/time);
-        let timerId = setInterval(function() {
-            if (currentSum > 0) {
-
-                currentSum = currentSum - payment;
-
-            }
-            else if (currentSum == 0) {
-                clearInterval(timerId);
-
-            }
-            console.log(currentSum);
-        }, 60000);
-
-    }
 
     const channelState1 = {
         balanceA: toNano(int_finalBalanceA.toString()),
         balanceB: toNano(int_finalBalanceB.toString()),
-        seqnoA: new BN(segA) + new BN(1),
-        seqnoB: new BN(segB) + new BN(1)
+        seqnoA: new BN(segA).add(new BN(2)),
+        seqnoB: new BN(segB).add(new BN(0))
     };
 
     // A signs this state and send signed state to B (e.g. via websocket)
@@ -286,28 +287,38 @@ const init = async () => {
     }
     const signatureB1 = await channelB.signState(channelState1);
 
+
+
     //----------------------------------------------------------------------
     // SECOND OFFCHAIN TRANSFER - A sends 0.2 TON to B
 
     // A creates new state - subtracts 0.2 from A's balance, adds 0.2 to B's balance, increases A's seqno by 1
 
-    // const channelState2 = {
-    //     balanceA: toNano('0.7'),
-    //     balanceB: toNano('2.3'),
-    //     seqnoA: new BN(2),
-    //     seqnoB: new BN(0)
-    // };
-    //
-    // // A signs this state and send signed state to B (e.g. via websocket)
-    //
-    // const signatureA2 = await channelA.signState(channelState2);
-    //
-    // // B checks that the state is changed according to the rules, signs this state, send signed state to A (e.g. via websocket)
-    //
-    // if (!(await channelB.verifyState(channelState2, signatureA2))) {
-    //     throw new Error('Invalid A signature');
-    // }
-    // const signatureB2 = await channelB.signState(channelState2);
+    data = await channelA.getData();
+    BalA = data.balanceA.toString();
+    BalB = data.balanceB.toString();
+    segA = data.seqnoA.toString();
+    segB = data.seqnoB.toString();
+
+
+    const channelState2 = {
+        balanceA: toNano(int_finalBalanceA.toString()),
+        balanceB: toNano(int_finalBalanceB.toString()),
+        seqnoA: new BN(segA).add(new BN(2)),
+        seqnoB: new BN(segB).add(new BN(2))
+    };
+
+    // A signs this state and send signed state to B (e.g. via websocket)
+
+    const signatureA2 = await channelA.signState(channelState2);
+
+    // B checks that the state is changed according to the rules, signs this state, send signed state to A (e.g. via websocket)
+
+    if (!(await channelB.verifyState(channelState2, signatureA2))) {
+        throw new Error('Invalid A signature');
+    }
+    const signatureB2 = await channelB.signState(channelState2);
+
     //
     // //----------------------------------------------------------------------
     // // THIRD OFFCHAIN TRANSFER - B sends 1.1 TON TO A
@@ -347,21 +358,22 @@ const init = async () => {
 
     // First B signs closing message with last state, B sends it to A (e.g. via websocket)
 
-    const signatureCloseB = await channelB.signClose(channelState1);
+    const signatureCloseB = await channelB.signClose(channelState2);
 
     // A verifies and signs this closing message and include B's signature
 
     // A sends closing message to blockchain, payments channel smart contract
     // Payment channel smart contract will send funds to participants according to the balances of the sent state.
 
-    if (!(await channelA.verifyClose(channelState1, signatureCloseB))) {
+    if (!(await channelA.verifyClose(channelState2, signatureCloseB))) {
         throw new Error('Invalid B signature');
     }
 
     await fromWalletA.close({
-        ...channelState1,
+        ...channelState2,
         hisSignature: signatureCloseB
     }).send(toNano('0.06'));
+
 
 
     // wait for state from Channel
@@ -408,6 +420,16 @@ const init = async () => {
     console.log('seqnoB', segB);
 
     console.log('End')
-    }
+
+    walletBalanceA = await tonweb.getBalance(walletAddressA.toString(true, true, true))
+    walletBalanceB = await tonweb.getBalance(walletAddressB.toString(true, true, true))
+
+    await new Promise(r => setTimeout(r, 5000));
+
+    console.log()
+    console.log('Final walletA balance: ',fromNano(walletBalanceA));
+    console.log('Final walletB balance: ',fromNano(walletBalanceB));
+    console.log()
+}
 
 init();
