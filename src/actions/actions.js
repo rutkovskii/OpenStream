@@ -9,7 +9,7 @@ export const ConnectWallet = async (dispatch) => {
 		const account = accounts[0]; // We currently only ever provide a single account,
 		// but the array gives us some room to grow.
 		dispatch({ type: "SET_WALLET_ADDRESS", data: account });
-
+		toast.success("wallet is connected");
 		console.log(await provider.send("ton_requestWallets"));
 
 		provider.on("accountsChanged", function (accounts) {
