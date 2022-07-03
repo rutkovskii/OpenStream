@@ -1,6 +1,6 @@
 function changeSum(currentSum) {
     let time = '60000';
-    let payment = (currentSum/time);
+    let payment = (currentSum/time); //Ton(in Nano)/Min
     let timerId = setInterval(function() {
         if (currentSum > 0) {
 
@@ -12,7 +12,9 @@ function changeSum(currentSum) {
 
         }
         console.log(currentSum);
-    }, 60000);
+        //Payment method here
+    }, 2000);
 
 }
+
 changeSum(5000);
