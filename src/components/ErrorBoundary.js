@@ -26,7 +26,7 @@ class ErrorBoundary extends Component {
 						<img src="https://static.oxinis.com/healthmug/image/healthmug/error.png" className="w-44 h-44 inline-block" />
 						<h4 className="mt-md text-md font-medium">Oops...</h4>
 						<p className="text-gray-medium">Sorry, Something went wrong. Try again</p>
-						<Link href="/Users/dev-1/WebstormProjects/OpenStream/public">
+						<Link href="/">
 							<button>CONTINUE SHOPPING</button>
 						</Link>
 					</div>

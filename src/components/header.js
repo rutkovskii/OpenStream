@@ -8,12 +8,11 @@ import Button from "./Button";
 const Header = () => {
 	const { state, dispatch } = useContext(store);
 	console.log(state);
-	useEffect(() => {}, []);
 
 	return (
 		<>
 			<div className="flex justify-between p-[16px] h-[60px] sticky top-0 bg-white">
-				<Link href="/Users/dev-1/WebstormProjects/OpenStream/public">
+				<Link href="/">
 					<span className="font-bold text-lg">OpenStream</span>
 				</Link>
 				{!!state.address ? (
