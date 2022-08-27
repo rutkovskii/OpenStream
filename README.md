@@ -15,7 +15,7 @@ The Open Network 1st Hackathon 01/07/22 - 03/07/22 Repository
 
 
 ### How to use:
-* To Run the Backend Prototype, type ```node main.js```
+* To Run the Backend Prototype, type ```npm install && node main.js```
 * To Run the Frontend, type: ```npm install && npm run build && npm start```
   * In case of an error, type: ``` npm install react && npm run build && npm start ```
 
